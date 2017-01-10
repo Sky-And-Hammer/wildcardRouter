@@ -13,13 +13,13 @@ type WildcardRouter struct {
 
 // Initial
 func New() *WildcardRouter {
-	return &WildcardRouter()
+	return &WildcardRouter{}
 }
 
 func (w *WildcardRouter) MountTo(mountTo string, mux *http.ServeMux) {
 	mountTo = "/" + strings.Trim(mountTo, "/")
-	mux.Handler(mountTo, w)
-	mux.Handler(mountTo+"/", w)
+	mux.Handle(mountTo, w)
+	mux.Handle(mountTo+"/", w)
 }
 
 func (w *WildcardRouter) AddHandler(handler http.Handler) {
@@ -31,7 +31,7 @@ func (w *WildcardRouter) Use(middleware func(writer http.ResponseWriter, request
 }
 
 func (w *WildcardRouter) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
-	wildcardRouterWriter := &WildcardRouterWriter
+	wildcardRouterWriter := &WildcardRouterWriter{writer, 0, false}
 	for _, middleware := range w.middlewares {
 		middleware(writer, req)
 	}
@@ -45,10 +45,10 @@ func (w *WildcardRouter) ServeHTTP(writer http.ResponseWriter, req *http.Request
 	}
 
 	wildcardRouterWriter.skipNotFoundCheck = true
-	http.NotFound(WildcardRouterWriter, req)
+	http.NotFound(wildcardRouterWriter, req)
 }
 
-//
+//	WildcardRouterWriter will used to capture status
 type WildcardRouterWriter struct {
 	http.ResponseWriter
 	status            int
